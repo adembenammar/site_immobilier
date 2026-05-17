@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-primary text-ink dark:bg-night dark:text-white;
+}
+
+#root {
+  @apply min-h-screen;
+}
+
+.glass-panel {
+  @apply border border-white/15 bg-white/10 backdrop-blur-xl dark:border-white/10 dark:bg-white/5;
+}
+
+.section-shell {
+  @apply mx-auto max-w-7xl px-4 sm:px-6 lg:px-8;
+}
+
+.input-ui {
+  @apply w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-bronze dark:border-slate-700 dark:bg-slate-900 dark:text-white;
+}
+
+.btn-primary {
+  @apply inline-flex items-center justify-center rounded-full bg-forest px-5 py-3 text-sm font-semibold text-white transition hover:scale-[1.02] hover:bg-forest/90;
+}
+
+.btn-secondary {
+  @apply inline-flex items-center justify-center rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-bronze hover:text-bronze dark:border-slate-700 dark:text-slate-200;
+}
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+.dark .skeleton {
+  background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+  background-size: 400px 100%;
+}
+
+/* Toast slide-in */
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Print styles */
+@media print {
+  header, footer, nav, .no-print { display: none !important; }
+  body { background: white !important; color: black !important; }
+  .print-only { display: block !important; }
+  * { box-shadow: none !important; }
+}
+
+.hero-tab {
+  @apply border-b border-transparent pb-3 text-sm uppercase tracking-[0.28em] text-white/70 transition hover:text-white;
+}
+
+.hero-tab-active {
+  @apply border-white text-white;
+}
+
+/* Mega-menu animation */
+.mega-menu-enter {
+  animation: megaMenuIn 0.18s ease-out forwards;
+}
+@keyframes megaMenuIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Danger button */
+.btn-danger {
+  @apply inline-flex items-center justify-center rounded-full border border-rose-200 bg-rose-500/10 px-5 py-3 text-sm font-semibold text-rose-600 transition hover:bg-rose-500 hover:text-white;
+}

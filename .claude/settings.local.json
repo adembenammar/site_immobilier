@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npx vite *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\HP\\\\Desktop\\\\site_immobilier\\\\backend\" -Recurse -Include \"*contact*\")",
+      "Bash(Select-Object FullName)",
+      "Bash(npm run *)",
+      "Bash(node --input-type=module)",
+      "Bash(curl -s -X POST http://localhost:5000/api/contacts -H \"Content-Type: application/json\" -d \"{\\\\\"fullName\\\\\":\\\\\"Test User\\\\\",\\\\\"email\\\\\":\\\\\"test@test.com\\\\\",\\\\\"message\\\\\":\\\\\"Ceci est un message de test.\\\\\"}\")",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(curl -s -X POST http://localhost:5000/api/contacts -H \"Content-Type: application/json\" -d \"{\\\\\"fullName\\\\\":\\\\\"x\\\\\",\\\\\"email\\\\\":\\\\\"x@x.com\\\\\",\\\\\"message\\\\\":\\\\\"test message\\\\\"}\")"
+    ]
+  }
+}
