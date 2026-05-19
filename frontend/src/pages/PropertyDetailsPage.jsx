@@ -296,26 +296,26 @@ const PropertyDetailsPage = () => {
               <h3 className="mt-5 font-display text-4xl font-light text-white">{t("property_detail.contact_title")}</h3>
               <div className="mt-7 space-y-3">
                 <input
-                  className="w-full rounded-2xl border border-white/10 bg-white/6 px-4 py-3.5 text-sm text-white placeholder:text-white/25 outline-none transition focus:border-bronze focus:ring-2 focus:ring-bronze/15 caret-bronze"
+                  className="w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-3.5 text-sm text-white placeholder:text-white/50 outline-none transition focus:border-bronze focus:ring-2 focus:ring-bronze/15 caret-bronze [color-scheme:dark]"
                   placeholder={t("property_detail.form_name")}
                   value={contactForm.fullName}
                   onChange={(e) => setContactForm((p) => ({ ...p, fullName: e.target.value }))}
                 />
                 <input
-                  className="w-full rounded-2xl border border-white/10 bg-white/6 px-4 py-3.5 text-sm text-white placeholder:text-white/25 outline-none transition focus:border-bronze focus:ring-2 focus:ring-bronze/15 caret-bronze"
+                  className="w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-3.5 text-sm text-white placeholder:text-white/50 outline-none transition focus:border-bronze focus:ring-2 focus:ring-bronze/15 caret-bronze [color-scheme:dark]"
                   type="email"
                   placeholder={t("property_detail.form_email")}
                   value={contactForm.email}
                   onChange={(e) => setContactForm((p) => ({ ...p, email: e.target.value }))}
                 />
                 <input
-                  className="w-full rounded-2xl border border-white/10 bg-white/6 px-4 py-3.5 text-sm text-white placeholder:text-white/25 outline-none transition focus:border-bronze focus:ring-2 focus:ring-bronze/15 caret-bronze"
+                  className="w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-3.5 text-sm text-white placeholder:text-white/50 outline-none transition focus:border-bronze focus:ring-2 focus:ring-bronze/15 caret-bronze [color-scheme:dark]"
                   placeholder={t("property_detail.form_phone")}
                   value={contactForm.phone}
                   onChange={(e) => setContactForm((p) => ({ ...p, phone: e.target.value }))}
                 />
                 <textarea
-                  className="w-full rounded-2xl border border-white/10 bg-white/6 px-4 py-3.5 text-sm text-white placeholder:text-white/25 outline-none transition focus:border-bronze focus:ring-2 focus:ring-bronze/15 caret-bronze min-h-36"
+                  className="w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-3.5 text-sm text-white placeholder:text-white/50 outline-none transition focus:border-bronze focus:ring-2 focus:ring-bronze/15 caret-bronze [color-scheme:dark] min-h-36"
                   placeholder={t("property_detail.form_message")}
                   value={contactForm.message}
                   onChange={(e) => setContactForm((p) => ({ ...p, message: e.target.value }))}
