@@ -64,7 +64,7 @@ const BookingModal = ({ property, onClose }) => {
             <h2 className="mt-1 font-display text-3xl text-ink dark:text-white">Choisissez un créneau</h2>
             <p className="mt-1 text-sm text-slate-500">{property.title} · {property.city}</p>
           </div>
-          <button type="button" onClick={onClose}
+          <button type="button" aria-label="Fermer" onClick={onClose}
             className="ml-4 flex-shrink-0 rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800">
             <X size={20} />
           </button>
@@ -77,10 +77,10 @@ const BookingModal = ({ property, onClose }) => {
               <p className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
                 <CalendarCheck size={13} className="text-bronze" /> Date souhaitée
               </p>
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                {days.map((d, i) => (
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+                {days.map((d) => (
                   <button
-                    key={i}
+                    key={d.toISOString()}
                     type="button"
                     onClick={() => setSelectedDay(d)}
                     className={`rounded-2xl border px-3 py-2.5 text-center text-xs font-medium transition ${

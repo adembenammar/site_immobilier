@@ -32,24 +32,31 @@ export const getFeaturedProperties = async (req, res) => {
 
 export const getProperty = async (req, res) => {
   const property = await propertyModel.findById(req.params.id);
-
-  if (!property) {
-    throw new AppError("Property not found", 404);
-  }
-
+  if (!property) throw new AppError("Property not found", 404);
   return res.json(property);
+};
+
+/* ── Helper: convert processed file path → /uploads/<filename> URL ── */
+const toImageUrl = (filePath) => {
+  const filename = path.basename(filePath);
+  return `/uploads/${filename}`;
 };
 
 export const createProperty = async (req, res) => {
   const property = await propertyModel.create(req.body);
 
   if (req.files?.length) {
-    await Promise.all(
-      req.files.map(async (file, index) => {
-        await processImage(file.path);
-        await propertyModel.addImage(property.id, `/uploads/${file.filename}`, index === 0);
-      })
-    );
+    // Process sequentially so sort_order reflects upload order
+    for (let index = 0; index < req.files.length; index++) {
+      const file = req.files[index];
+      const finalPath = await processImage(file.path);
+      await propertyModel.addImage(
+        property.id,
+        toImageUrl(finalPath),
+        index === 0,   // first image is cover
+        index          // sort_order
+      );
+    }
   }
 
   const completeProperty = await propertyModel.findById(property.id);
@@ -58,58 +65,78 @@ export const createProperty = async (req, res) => {
 
 export const updateProperty = async (req, res) => {
   const current = await propertyModel.findById(req.params.id);
+  if (!current) throw new AppError("Property not found", 404);
 
-  if (!current) {
-    throw new AppError("Property not found", 404);
-  }
-
-  const property = await propertyModel.update(req.params.id, req.body);
+  await propertyModel.update(req.params.id, req.body);
 
   if (req.files?.length) {
-    await Promise.all(
-      req.files.map(async (file, index) => {
-        await processImage(file.path);
-        await propertyModel.addImage(property.id, `/uploads/${file.filename}`, index === 0 && !property.cover_image);
-      })
-    );
+    // Use current cover state (before update) to decide if new images need a cover
+    const hasCover = Boolean(current.cover_image);
+    const existingCount = current.images?.length ?? 0;
+
+    for (let index = 0; index < req.files.length; index++) {
+      const file = req.files[index];
+      const finalPath = await processImage(file.path);
+      await propertyModel.addImage(
+        current.id,
+        toImageUrl(finalPath),
+        index === 0 && !hasCover,  // set cover only if none exists yet
+        existingCount + index      // sort_order after existing images
+      );
+    }
   }
 
-  const completeProperty = await propertyModel.findById(property.id);
+  const completeProperty = await propertyModel.findById(req.params.id);
   return res.json(completeProperty);
 };
 
 export const deleteProperty = async (req, res) => {
   const current = await propertyModel.findById(req.params.id);
-
-  if (!current) {
-    throw new AppError("Property not found", 404);
-  }
+  if (!current) throw new AppError("Property not found", 404);
 
   await propertyModel.remove(req.params.id);
   return res.status(204).send();
 };
 
 export const deleteImage = async (req, res) => {
+  // Verify image belongs to this property before deleting
+  const image = await propertyModel.findImageById(req.params.imageId);
+  if (!image) throw new AppError("Image not found", 404);
+  if (String(image.property_id) !== String(req.params.id)) {
+    throw new AppError("Image does not belong to this property", 403);
+  }
+
   await propertyModel.removeImage(req.params.imageId);
   return res.status(204).send();
 };
 
 export const setCoverImage = async (req, res) => {
+  // Verify image belongs to this property
+  const image = await propertyModel.findImageById(req.params.imageId);
+  if (!image) throw new AppError("Image not found", 404);
+  if (String(image.property_id) !== String(req.params.id)) {
+    throw new AppError("Image does not belong to this property", 403);
+  }
+
   await propertyModel.setCoverImage(req.params.id, req.params.imageId);
   const updated = await propertyModel.findById(req.params.id);
   return res.json(updated);
 };
 
 export const reorderImages = async (req, res) => {
-  // orderedIds: [id1, id2, id3, ...] in desired display order
   const { orderedIds } = req.body;
   if (!Array.isArray(orderedIds)) {
     return res.status(422).json({ message: "orderedIds must be an array" });
   }
+
+  // Verify all images belong to this property
+  const images = await propertyModel.findImagesByPropertyId(req.params.id);
+  const validIds = new Set(images.map((img) => String(img.id)));
+  const invalid = orderedIds.find((id) => !validIds.has(String(id)));
+  if (invalid) throw new AppError("One or more image IDs do not belong to this property", 403);
+
   await Promise.all(
-    orderedIds.map((imageId, index) =>
-      propertyModel.updateImageOrder(imageId, index)
-    )
+    orderedIds.map((imageId, index) => propertyModel.updateImageOrder(imageId, index))
   );
   return res.json({ ok: true });
 };

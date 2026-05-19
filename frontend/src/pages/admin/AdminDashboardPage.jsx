@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link, Navigate } from "react-router-dom";
 import AdminSidebar from "../../components/admin/AdminSidebar";
 import api from "../../api/client";
 import EmptyState from "../../components/common/EmptyState";
+import LoadingState from "../../components/common/LoadingState";
 import ConfirmModal from "../../components/common/ConfirmModal";
+import { useAuth } from "../../context/AuthContext";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, useSortable, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
@@ -34,10 +37,14 @@ const exportCSV = (rows, filename) => {
     headers.join(";"),
     ...rows.map((r) => headers.map((h) => `"${(r[h] ?? "").toString().replace(/"/g, '""')}"`).join(";")),
   ];
+  // ﻿ = UTF-8 BOM — required for Excel to open accented characters correctly
   const blob = new Blob(["﻿" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement("a");
-  a.href = url; a.download = filename; a.click();
+  a.href = url; a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
   URL.revokeObjectURL(url);
 };
 
@@ -75,22 +82,22 @@ function VisitCalendar({ messages }) {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <button type="button" onClick={prev} className="rounded-xl p-1 hover:bg-slate-100 dark:hover:bg-slate-800"><ChevronLeft size={18} /></button>
+        <button type="button" onClick={prev} aria-label="Mois précédent" className="rounded-xl p-1 hover:bg-slate-100 dark:hover:bg-slate-800"><ChevronLeft size={18} /></button>
         <p className="font-display text-xl text-ink dark:text-white">{MONTHS_FR[month]} {year}</p>
-        <button type="button" onClick={next} className="rounded-xl p-1 hover:bg-slate-100 dark:hover:bg-slate-800"><ChevronRight size={18} /></button>
+        <button type="button" onClick={next} aria-label="Mois suivant" className="rounded-xl p-1 hover:bg-slate-100 dark:hover:bg-slate-800"><ChevronRight size={18} /></button>
       </div>
       <div className="grid grid-cols-7 gap-1 text-center">
         {DAYS.map((d) => <p key={d} className="py-1 text-[10px] uppercase tracking-widest text-slate-400">{d}</p>)}
         {cells.map((day, i) => (
-          <div key={i} className={`relative min-h-[44px] rounded-xl p-1 text-xs ${
+          <div key={day ?? `empty-${i}`} className={`relative min-h-[44px] rounded-xl p-1 text-xs ${
             day === today.getDate() && month === today.getMonth() && year === today.getFullYear()
               ? "bg-forest/10 font-bold text-forest" : day ? "hover:bg-slate-50 dark:hover:bg-slate-800" : ""
           }`}>
             {day && <span className="block text-right text-slate-500">{day}</span>}
             {day && visitsByDay[day]?.length > 0 && (
               <div className="mt-0.5 flex flex-wrap justify-center gap-0.5">
-                {visitsByDay[day].map((m, j) => (
-                  <span key={j} title={`${m.full_name}${m.property_title ? ` — ${m.property_title}` : ""}`}
+                {visitsByDay[day].map((m) => (
+                  <span key={m.id} title={`${m.full_name}${m.property_title ? ` — ${m.property_title}` : ""}`}
                     className="block h-1.5 w-1.5 rounded-full bg-bronze" />
                 ))}
               </div>
@@ -122,8 +129,8 @@ function SortableImage({ img, editingId, onDelete, onSetCover }) {
         <GripVertical size={12} />
       </div>
       <img
-        src={`http://localhost:5000${img.image_url}`}
-        alt=""
+        src={`${import.meta.env.VITE_UPLOADS_URL || ""}${img.image_url}`}
+        alt={img.is_cover ? "Image de couverture" : "Image du bien"}
         className={`h-24 w-24 rounded-2xl object-cover border-2 transition ${img.is_cover ? "border-bronze" : "border-slate-200 dark:border-slate-700"}`}
       />
       {img.is_cover && (
@@ -168,7 +175,7 @@ function PreviewModal({ form, categories, onClose }) {
           <p className="rounded-full bg-amber-100 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-amber-700">
             Aperçu avant publication
           </p>
-          <button onClick={onClose} className="rounded-full bg-white/10 p-2 text-white hover:bg-white/20"><X size={18} /></button>
+          <button type="button" aria-label="Fermer l'aperçu" onClick={onClose} className="rounded-full bg-white/10 p-2 text-white hover:bg-white/20"><X size={18} /></button>
         </div>
         <PropertyCard property={mockProperty} />
         <p className="mt-3 text-center text-xs text-white/50">Ceci est un aperçu — les images réelles seront affichées après publication.</p>
@@ -194,6 +201,7 @@ const emptyProperty = {
 
 /* ═══════════════════════════════════════════════════════════ */
 const AdminDashboardPage = () => {
+  const { user, loading: authLoading } = useAuth();
   const [properties, setProperties] = useState([]);
   const [users, setUsers]           = useState([]);
   const [categories, setCategories] = useState([]);
@@ -209,22 +217,29 @@ const AdminDashboardPage = () => {
   const [propertySearch, setPropertySearch] = useState("");
   const [showPreview, setShowPreview] = useState(false);
   const [feedback, setFeedback]     = useState("");
+  const [adminLoading, setAdminLoading] = useState(true);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
   const toast = useToast();
 
   const loadAdminData = async () => {
-    const [pRes, uRes, cRes, mRes] = await Promise.all([
-      api.get("/properties"), api.get("/users"), api.get("/categories"), api.get("/contacts"),
-    ]);
-    setProperties(pRes.data);
-    setUsers(uRes.data);
-    setCategories(cRes.data);
-    setMessages(mRes.data);
+    try {
+      const [pRes, uRes, cRes, mRes] = await Promise.all([
+        api.get("/properties"), api.get("/users"), api.get("/categories"), api.get("/contacts"),
+      ]);
+      setProperties(pRes.data);
+      setUsers(uRes.data);
+      setCategories(cRes.data);
+      setMessages(mRes.data);
+    } catch {
+      setFeedback("Données inaccessibles. Vérifiez vos permissions.");
+    } finally {
+      setAdminLoading(false);
+    }
   };
 
   useEffect(() => {
-    loadAdminData().catch(() => setFeedback("Admin login required with sufficient permissions."));
-  }, []);
+    if (user) loadAdminData();
+  }, [user]);
 
   const resetForm = () => {
     setEditingId(null);
@@ -266,30 +281,42 @@ const AdminDashboardPage = () => {
   };
 
   const handleEditProperty = async (property) => {
-    const { data } = await api.get(`/properties/${property.id}`);
-    setEditingId(data.id);
-    setPropertyForm({
-      title: data.title, slug: data.slug, description: data.description,
-      city: data.city, address: data.address, price: data.price, surface: data.surface,
-      rooms: data.rooms, bedrooms: data.bedrooms, bathrooms: data.bathrooms,
-      transactionType: data.transaction_type, status: data.status,
-      featuredBadge: data.featured_badge || "", latitude: data.latitude || "",
-      longitude: data.longitude || "", categoryId: data.category_id || "",
-      isFeatured: Boolean(data.is_featured),
-    });
-    setExistingImages(data.images || []);
-    setFiles([]); setPreviews([]);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    try {
+      const { data } = await api.get(`/properties/${property.id}`);
+      setEditingId(data.id);
+      setPropertyForm({
+        title: data.title, slug: data.slug, description: data.description,
+        city: data.city, address: data.address, price: data.price, surface: data.surface,
+        rooms: data.rooms, bedrooms: data.bedrooms, bathrooms: data.bathrooms,
+        transactionType: data.transaction_type, status: data.status,
+        featuredBadge: data.featured_badge || "", latitude: data.latitude || "",
+        longitude: data.longitude || "", categoryId: data.category_id || "",
+        isFeatured: Boolean(data.is_featured),
+      });
+      setExistingImages(data.images || []);
+      setFiles([]); setPreviews([]);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch {
+      toast("Impossible de charger ce bien.", "error");
+    }
   };
 
   const handleDeleteImage = async (imageId) => {
-    await api.delete(`/properties/${editingId}/images/${imageId}`);
-    setExistingImages((prev) => prev.filter((img) => img.id !== imageId));
+    try {
+      await api.delete(`/properties/${editingId}/images/${imageId}`);
+      setExistingImages((prev) => prev.filter((img) => img.id !== imageId));
+    } catch {
+      toast("Suppression de l'image impossible.", "error");
+    }
   };
 
   const handleSetCover = async (imageId) => {
-    await api.put(`/properties/${editingId}/images/${imageId}/cover`);
-    setExistingImages((prev) => prev.map((img) => ({ ...img, is_cover: img.id === imageId ? 1 : 0 })));
+    try {
+      await api.put(`/properties/${editingId}/images/${imageId}/cover`);
+      setExistingImages((prev) => prev.map((img) => ({ ...img, is_cover: img.id === imageId ? 1 : 0 })));
+    } catch {
+      toast("Mise à jour de la couverture impossible.", "error");
+    }
   };
 
   const handleImageDragEnd = async (event) => {
@@ -298,13 +325,27 @@ const AdminDashboardPage = () => {
     const oldIndex = existingImages.findIndex((i) => i.id === active.id);
     const newIndex = existingImages.findIndex((i) => i.id === over.id);
     const reordered = arrayMove(existingImages, oldIndex, newIndex);
-    setExistingImages(reordered);
-    await api.put(`/properties/${editingId}/images/reorder`, { orderedIds: reordered.map((i) => i.id) });
+    setExistingImages(reordered); // optimistic update
+    try {
+      await api.put(`/properties/${editingId}/images/reorder`, { orderedIds: reordered.map((i) => i.id) });
+    } catch {
+      // Revert on failure
+      setExistingImages(existingImages);
+      toast("Réorganisation impossible.", "error");
+    }
   };
 
   const handleMessageStatus = async (id, status) => {
-    await api.patch(`/contacts/${id}/status`, { status });
+    // Save previous status before optimistic update so we can revert correctly
+    const previous = messages.find((m) => m.id === id)?.status;
     setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, status } : m)));
+    try {
+      await api.patch(`/contacts/${id}/status`, { status });
+    } catch {
+      // Revert to the saved previous value
+      setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, status: previous } : m)));
+      toast("Mise à jour du statut impossible.", "error");
+    }
   };
 
   const handleDeleteProperty = async (id) => {
@@ -392,6 +433,13 @@ const AdminDashboardPage = () => {
     (p) => !propertySearch || p.title?.toLowerCase().includes(propertySearch.toLowerCase()) || p.city?.toLowerCase().includes(propertySearch.toLowerCase())
   );
 
+  // Auth guard — redirect unauthenticated users to login
+  if (authLoading) return <LoadingState />;
+  if (!user) return <Navigate to="/login" replace />;
+
+  // Admin data loading
+  if (adminLoading) return <LoadingState />;
+
   if (feedback && !properties.length && !categories.length) {
     return <section className="section-shell py-16"><EmptyState title="Dashboard restreint" description={feedback} /></section>;
   }
@@ -414,17 +462,65 @@ const AdminDashboardPage = () => {
         <PreviewModal form={propertyForm} categories={categories} onClose={() => setShowPreview(false)} />
       )}
 
-      <section className="section-shell py-16">
-        {/* Page header */}
-        <div className="mb-10">
-          <p className="text-[11px] uppercase tracking-[0.35em] text-bronze">Espace administration</p>
-          <h1 className="mt-3 font-display text-5xl text-ink dark:text-white">Tableau de bord</h1>
-          <p className="mt-2 text-sm text-slate-400">
-            {properties.length} bien{properties.length !== 1 ? "s" : ""} publié{properties.length !== 1 ? "s" : ""} ·{" "}
-            {new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(new Date())}
-          </p>
+      {/* ── Dark hero header ── */}
+      <section className="relative overflow-hidden bg-ink dark:bg-obsidian">
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-bronze/6 via-transparent to-forest/5" />
+        <div className="section-shell relative py-14">
+          <div className="flex flex-wrap items-end justify-between gap-6">
+            <div>
+              <div className="flex items-center gap-3">
+                <div className="h-px w-8 bg-bronze/60" />
+                <p className="text-[10px] font-bold uppercase tracking-[0.42em] text-bronze/80">Espace administration</p>
+              </div>
+              <h1 className="mt-4 font-display text-3xl font-light leading-tight text-white sm:text-5xl lg:text-6xl">
+                Tableau de bord
+              </h1>
+              <p className="mt-3 text-sm text-white/35">
+                <span className="font-display text-lg font-light text-bronze/80">{properties.length}</span>
+                {" "}bien{properties.length !== 1 ? "s" : ""} publié{properties.length !== 1 ? "s" : ""}
+                {" "}·{" "}
+                {new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(new Date())}
+              </p>
+            </div>
+            {/* Quick stats mini chips */}
+            <div className="flex flex-wrap gap-2">
+              {[
+                { label: "Biens",     value: properties.length },
+                { label: "Messages",  value: messages.length },
+                { label: "Membres",   value: users.length },
+              ].map(({ label, value }) => (
+                <div key={label} className="rounded-2xl border border-white/10 bg-white/6 px-4 py-2 backdrop-blur-sm">
+                  <p className="font-display text-xl font-light text-white">{value}</p>
+                  <p className="text-[9px] uppercase tracking-[0.3em] text-white/40">{label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
+        {/* Bottom fade */}
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-bronze/20 to-transparent" />
+      </section>
 
+      {/* Mobile anchor nav */}
+      <div className="overflow-x-auto border-b border-ink/8 bg-white dark:border-white/6 dark:bg-carbon lg:hidden">
+        <div className="flex min-w-max gap-1 px-4 py-2">
+          {[
+            { label: "Stats",        href: "#statistiques" },
+            { label: "Biens",        href: "#biens" },
+            { label: "Utilisateurs", href: "#utilisateurs" },
+            { label: "Catégories",   href: "#categories" },
+            { label: "Agenda",       href: "#agenda" },
+            { label: "Messages",     href: "#messages" },
+          ].map(({ label, href }) => (
+            <a key={href} href={href}
+              className="rounded-xl px-4 py-2 text-xs font-semibold text-ink/55 transition hover:bg-bronze/8 hover:text-bronze dark:text-white/45 dark:hover:text-bronze whitespace-nowrap">
+              {label}
+            </a>
+          ))}
+        </div>
+      </div>
+
+      <section className="section-shell py-12">
         <div className="grid gap-8 lg:grid-cols-[260px_1fr]">
           <div className="hidden lg:block"><AdminSidebar /></div>
 
@@ -432,19 +528,21 @@ const AdminDashboardPage = () => {
             {/* Stats cards */}
             <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
               {[
-                { label: "Biens",        value: properties.length, icon: Building2 },
-                { label: "Utilisateurs", value: users.length,      icon: Users },
-                { label: "Catégories",   value: categories.length, icon: FolderTree },
-                { label: "Messages",     value: messages.length,   icon: Mail },
-              ].map(({ label, value, icon: Icon }) => (
-                <div key={label} className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-900">
-                  <div className="flex items-center justify-between">
-                    <p className="text-[10px] uppercase tracking-[0.28em] text-bronze">{label}</p>
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-forest/10">
-                      <Icon size={16} className="text-forest" />
+                { label: "Biens publiés",  value: properties.length, icon: Building2, accent: "forest" },
+                { label: "Utilisateurs",   value: users.length,      icon: Users,     accent: "bronze" },
+                { label: "Catégories",     value: categories.length, icon: FolderTree,accent: "forest" },
+                { label: "Messages reçus", value: messages.length,   icon: Mail,      accent: "bronze" },
+              ].map(({ label, value, icon: Icon, accent }) => (
+                <div key={label} className="group relative overflow-hidden rounded-[28px] border border-slate-200/70 bg-white p-6 shadow-soft transition duration-300 hover:-translate-y-1 hover:shadow-deep dark:border-slate-800 dark:bg-carbon">
+                  <div className="pointer-events-none absolute inset-0 rounded-[28px] bg-gradient-to-br from-bronze/0 to-bronze/0 transition-all duration-500 group-hover:from-bronze/3" />
+                  <div className="flex items-start justify-between">
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-2xl border ${accent === "bronze" ? "border-bronze/20 bg-bronze/10" : "border-forest/20 bg-forest/10"}`}>
+                      <Icon size={17} className={accent === "bronze" ? "text-bronze" : "text-forest"} />
                     </div>
                   </div>
-                  <p className="mt-4 font-display text-5xl text-ink dark:text-white">{value}</p>
+                  <p className="mt-4 font-display text-5xl font-light text-ink dark:text-white">{value}</p>
+                  <div className="mt-2 h-px w-6 bg-bronze/30 transition-all duration-400 group-hover:w-10 group-hover:bg-bronze/60" />
+                  <p className="mt-2 text-[10px] uppercase tracking-[0.28em] text-slate-400">{label}</p>
                 </div>
               ))}
             </div>
@@ -476,7 +574,7 @@ const AdminDashboardPage = () => {
                     <PieChart>
                       <Pie data={byCategory} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75}
                         label={({ name, percent }) => `${name} ${(percent*100).toFixed(0)}%`} labelLine={false}>
-                        {byCategory.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+                        {byCategory.map((entry, i) => <Cell key={entry.name} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
                       </Pie>
                       <Tooltip />
                     </PieChart>
@@ -699,32 +797,45 @@ const AdminDashboardPage = () => {
                     value={propertySearch} onChange={(e) => setPropertySearch(e.target.value)} />
                 </div>
               </div>
-              <div className="mt-6 space-y-3">
+              <div className="mt-6 space-y-2">
                 {filteredProperties.map((property) => (
-                  <div key={property.id} className="flex flex-col gap-3 rounded-2xl bg-slate-50 p-4 dark:bg-slate-800 xl:flex-row xl:items-center xl:justify-between">
-                    <div className="flex items-start gap-4">
-                      {property.cover_image && (
-                        <img src={property.cover_image} alt="" className="h-14 w-14 flex-shrink-0 rounded-xl object-cover" />
-                      )}
+                  <div key={property.id} className="group flex flex-col gap-3 rounded-2xl border border-slate-100 bg-slate-50/80 p-4 transition duration-200 hover:border-bronze/20 hover:bg-white dark:border-slate-800 dark:bg-slate-800/60 dark:hover:border-bronze/15 dark:hover:bg-slate-800 xl:flex-row xl:items-center xl:justify-between">
+                    <div className="flex items-center gap-4">
+                      {/* Thumbnail */}
+                      <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl">
+                        {property.cover_image ? (
+                          <img
+                            src={property.cover_image?.startsWith("/uploads") ? `${import.meta.env.VITE_UPLOADS_URL || ""}${property.cover_image}` : property.cover_image}
+                            alt={property.title}
+                            className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center bg-slate-200 dark:bg-slate-700">
+                            <Building2 size={18} className="text-slate-400" />
+                          </div>
+                        )}
+                      </div>
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="font-semibold text-ink dark:text-white">{property.title}</p>
-                          <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${STATUS_BADGE[property.status] || STATUS_BADGE.available}`}>
+                          <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide ${STATUS_BADGE[property.status] || STATUS_BADGE.available}`}>
                             {property.status === "available" ? "Disponible" : property.status === "reserved" ? "Réservé" : "Vendu"}
                           </span>
                         </div>
-                        <p className="mt-0.5 text-sm text-slate-500">{property.city} · {property.category_name}</p>
-                        <p className="mt-1 text-xs font-semibold text-bronze">{fmt(property.price)}</p>
+                        <p className="mt-0.5 text-xs text-slate-500">
+                          {property.city}
+                          {property.category_name ? <> · <span className="text-bronze/80">{property.category_name}</span></> : ""}
+                        </p>
+                        <p className="mt-0.5 font-display text-base font-light text-bronze">{fmt(property.price)}</p>
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <a href={`/properties/${property.id}`} target="_blank" rel="noreferrer" className="btn-secondary text-xs gap-1.5">
+                      <Link to={`/properties/${property.id}`} target="_blank" rel="noreferrer" className="btn-secondary text-xs gap-1.5 px-4 py-2">
                         <Eye size={12} /> Voir
-                      </a>
-                      <button type="button" onClick={() => handleEditProperty(property)} className="btn-secondary text-xs">
+                      </Link>
+                      <button type="button" onClick={() => handleEditProperty(property)} className="btn-secondary text-xs px-4 py-2">
                         Modifier
                       </button>
-                      <button type="button" onClick={() => setConfirmDelete(property)} className="btn-danger text-xs">
+                      <button type="button" onClick={() => setConfirmDelete(property)} className="btn-danger text-xs px-4 py-2">
                         Supprimer
                       </button>
                     </div>
@@ -870,6 +981,7 @@ const AdminDashboardPage = () => {
           </div>
         </div>
       </section>
+
     </>
   );
 };

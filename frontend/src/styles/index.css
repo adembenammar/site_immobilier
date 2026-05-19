@@ -2,85 +2,255 @@
 @tailwind components;
 @tailwind utilities;
 
-html {
-  scroll-behavior: smooth;
+/* ══════════════════════════════════════════
+   BASE
+══════════════════════════════════════════ */
+
+@layer base {
+  html { scroll-behavior: smooth; }
+
+  body {
+    @apply bg-primary text-ink antialiased dark:bg-night dark:text-white;
+    font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+  }
+
+  #root { @apply min-h-screen; }
+
+  ::selection { @apply bg-bronze/20 text-ink; }
+
+  /* Ensure pointer cursor on all interactive elements */
+  button, [role="button"], a, label[for], select { cursor: pointer; }
 }
 
-body {
-  @apply bg-primary text-ink dark:bg-night dark:text-white;
+/* ══════════════════════════════════════════
+   LAYOUT
+══════════════════════════════════════════ */
+
+@layer components {
+  .section-shell {
+    @apply mx-auto max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  /* ── Buttons ── */
+  .btn-primary {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2
+           rounded-full bg-ink px-6 py-3
+           text-sm font-semibold tracking-wide text-white
+           shadow-md transition-all duration-200
+           hover:opacity-90 hover:-translate-y-px hover:shadow-lg
+           active:translate-y-0
+           dark:bg-white dark:text-ink dark:hover:bg-mist;
+  }
+
+  .btn-secondary {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2
+           rounded-full border border-ink/20 bg-white px-6 py-3
+           text-sm font-semibold text-ink
+           shadow-soft transition-all duration-200
+           hover:border-bronze hover:text-bronze hover:shadow-card
+           dark:border-white/20 dark:bg-white/5 dark:text-white
+           dark:hover:border-bronze dark:hover:text-bronze;
+  }
+
+  .btn-ghost {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2
+           rounded-full px-5 py-2.5 text-sm font-medium text-ink/60
+           transition-all duration-200
+           hover:bg-ink/10 hover:text-ink
+           dark:text-white/50 dark:hover:bg-white/10 dark:hover:text-white;
+  }
+
+  .btn-danger {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2
+           rounded-full border border-red-200 bg-red-50 px-5 py-3
+           text-sm font-semibold text-red-600
+           transition-all duration-200
+           hover:bg-red-500 hover:text-white hover:border-transparent
+           dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400
+           dark:hover:bg-red-500 dark:hover:text-white;
+  }
+
+  /* ── Inputs ── */
+  .input-ui {
+    @apply w-full rounded-2xl border border-ink/10 bg-white px-4 py-3
+           text-sm text-ink outline-none ring-0 caret-bronze
+           transition-all duration-200
+           placeholder:text-ink/40
+           focus:border-bronze focus:ring-2 focus:ring-bronze/20
+           dark:border-white/10 dark:bg-white/5 dark:text-white
+           dark:placeholder:text-white/30 dark:caret-bronze
+           dark:focus:border-bronze dark:focus:ring-bronze/10;
+  }
+
+  /* ── Cards ── */
+  .card {
+    @apply rounded-3xl border border-ink/10 bg-white shadow-soft
+           transition-all duration-300
+           dark:border-white/10 dark:bg-carbon;
+  }
+
+  .card-hover {
+    @apply card hover:-translate-y-1 hover:shadow-card;
+  }
+
+  /* ── Badges ── */
+  .badge {
+    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1
+           text-[10px] font-semibold uppercase tracking-[0.2em];
+  }
+  .badge-gold    { @apply badge border border-bronze/25 bg-bronze/10 text-bronze; }
+  .badge-success { @apply badge bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400; }
+  .badge-warning { @apply badge bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400; }
+  .badge-danger  { @apply badge bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400; }
+
+  /* ── Typography helpers ── */
+  .display-xl {
+    @apply font-display text-5xl font-light leading-tight tracking-tight
+           text-ink dark:text-white sm:text-6xl lg:text-7xl;
+  }
+  .display-lg {
+    @apply font-display text-4xl font-light leading-tight text-ink dark:text-white sm:text-5xl;
+  }
+  .display-md {
+    @apply font-display text-3xl font-light leading-snug text-ink dark:text-white;
+  }
+  .eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-[0.35em] text-bronze;
+  }
+  .body-lg { @apply text-base leading-8 text-ink/60 dark:text-white/60; }
+  .body-sm { @apply text-sm leading-7 text-ink/50 dark:text-white/50; }
 }
 
-#root {
-  @apply min-h-screen;
+/* ══════════════════════════════════════════
+   HERO TABS
+══════════════════════════════════════════ */
+
+@layer components {
+  .hero-tab {
+    @apply border-b-2 border-transparent pb-3 text-sm font-medium
+           uppercase tracking-[0.22em] text-white/60
+           transition-all duration-200 hover:text-white;
+  }
+  .hero-tab-active { @apply border-bronze text-white; }
 }
 
-.glass-panel {
-  @apply border border-white/15 bg-white/10 backdrop-blur-xl dark:border-white/10 dark:bg-white/5;
-}
+/* ══════════════════════════════════════════
+   ANIMATIONS
+══════════════════════════════════════════ */
 
-.section-shell {
-  @apply mx-auto max-w-7xl px-4 sm:px-6 lg:px-8;
-}
-
-.input-ui {
-  @apply w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-bronze dark:border-slate-700 dark:bg-slate-900 dark:text-white;
-}
-
-.btn-primary {
-  @apply inline-flex items-center justify-center rounded-full bg-forest px-5 py-3 text-sm font-semibold text-white transition hover:scale-[1.02] hover:bg-forest/90;
-}
-
-.btn-secondary {
-  @apply inline-flex items-center justify-center rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-bronze hover:text-bronze dark:border-slate-700 dark:text-slate-200;
-}
-
-/* Skeleton shimmer */
 @keyframes shimmer {
-  0%   { background-position: -400px 0; }
-  100% { background-position: 400px 0; }
+  0%   { background-position: -600px 0; }
+  100% { background-position:  600px 0; }
 }
 .skeleton {
-  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
-  background-size: 400px 100%;
-  animation: shimmer 1.4s ease infinite;
+  background: linear-gradient(90deg, #e9ecef 25%, #f5f7fa 50%, #e9ecef 75%);
+  background-size: 600px 100%;
+  animation: shimmer 1.6s ease infinite;
 }
 .dark .skeleton {
-  background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
-  background-size: 400px 100%;
+  background: linear-gradient(90deg, #1e2433 25%, #2a3347 50%, #1e2433 75%);
+  background-size: 600px 100%;
 }
 
-/* Toast slide-in */
 @keyframes slideInRight {
-  from { opacity: 0; transform: translateX(24px); }
+  from { opacity: 0; transform: translateX(28px); }
   to   { opacity: 1; transform: translateX(0); }
 }
 
-/* Print styles */
-@media print {
-  header, footer, nav, .no-print { display: none !important; }
-  body { background: white !important; color: black !important; }
-  .print-only { display: block !important; }
-  * { box-shadow: none !important; }
+@keyframes fadeScaleIn {
+  from { opacity: 0; transform: scale(0.97) translateY(6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-.hero-tab {
-  @apply border-b border-transparent pb-3 text-sm uppercase tracking-[0.28em] text-white/70 transition hover:text-white;
-}
-
-.hero-tab-active {
-  @apply border-white text-white;
-}
-
-/* Mega-menu animation */
 .mega-menu-enter {
-  animation: megaMenuIn 0.18s ease-out forwards;
+  animation: megaMenuIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 @keyframes megaMenuIn {
   from { opacity: 0; transform: translateY(-8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Danger button */
-.btn-danger {
-  @apply inline-flex items-center justify-center rounded-full border border-rose-200 bg-rose-500/10 px-5 py-3 text-sm font-semibold text-rose-600 transition hover:bg-rose-500 hover:text-white;
+/* ══════════════════════════════════════════
+   LUXURY UTILITIES
+══════════════════════════════════════════ */
+
+@layer components {
+  /* Thin bronze ornamental line + eyebrow text */
+  .luxury-eyebrow {
+    @apply flex items-center gap-3;
+  }
+  .luxury-eyebrow::before {
+    content: "";
+    @apply block h-px w-8 flex-shrink-0 bg-bronze;
+  }
+
+  /* Full-bleed dark section */
+  .section-dark {
+    @apply bg-ink text-white dark:bg-obsidian;
+  }
+
+  /* Warm cream section */
+  .section-sand {
+    @apply bg-sand dark:bg-carbon;
+  }
+
+  /* Decorative thin bronze border on top */
+  .border-luxury {
+    @apply border-t border-bronze/30;
+  }
+
+  /* Full-width bronze gradient divider */
+  .bronze-divider {
+    @apply h-px w-full bg-gradient-to-r from-transparent via-bronze/35 to-transparent;
+  }
+
+  /* Italic serif accent (for hero subtitles) */
+  .accent-italic {
+    @apply font-display italic font-light text-bronze;
+  }
 }
+
+/* Bronze shimmer on hover */
+@keyframes bronzeShimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+.bronze-shimmer {
+  background: linear-gradient(90deg, #c9a96e 0%, #e8d5b0 40%, #c9a96e 60%, #a07840 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.bronze-shimmer:hover {
+  animation: bronzeShimmer 1.8s linear infinite;
+}
+
+/* ══════════════════════════════════════════
+   FILTER SELECT OPTION (dark context)
+══════════════════════════════════════════ */
+
+/* Native <option> elements inherit OS styles — force dark bg so text is readable */
+select.filter-select option {
+  background-color: #111827;
+  color: #f0ece4;
+}
+
+/* ══════════════════════════════════════════
+   PRINT
+══════════════════════════════════════════ */
+
+@media print {
+  header, footer, nav, .no-print { display: none !important; }
+  body { background: white !important; color: black !important; }
+  * { box-shadow: none !important; }
+}
+
+/* ══════════════════════════════════════════
+   SCROLLBAR
+══════════════════════════════════════════ */
+
+::-webkit-scrollbar       { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background-color: rgba(10,15,30,0.15); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background-color: rgba(201,169,110,0.5); }

@@ -1,5 +1,6 @@
 import { body, param } from "express-validator";
 import { categoryModel } from "../models/categoryModel.js";
+import { AppError } from "../utils/AppError.js";
 
 export const categoryValidation = [
   body("name").trim().notEmpty().withMessage("Name is required"),
@@ -20,10 +21,13 @@ export const createCategory = async (req, res) => {
 
 export const updateCategory = async (req, res) => {
   const category = await categoryModel.update(req.params.id, req.body);
+  if (!category) throw new AppError("Category not found", 404);
   return res.json(category);
 };
 
 export const deleteCategory = async (req, res) => {
+  const existing = await categoryModel.findById(req.params.id);
+  if (!existing) throw new AppError("Category not found", 404);
   await categoryModel.remove(req.params.id);
   return res.status(204).send();
 };

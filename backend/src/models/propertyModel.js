@@ -12,7 +12,7 @@ const baseSelect = `
       SELECT pi.image_url
       FROM property_images pi
       WHERE pi.property_id = p.id
-      ORDER BY pi.is_cover DESC, pi.id ASC
+      ORDER BY pi.is_cover DESC, pi.sort_order ASC, pi.id ASC
       LIMIT 1
     ) AS cover_image
   FROM properties p
@@ -45,16 +45,12 @@ export const propertyModel = {
   async findById(id) {
     const [rows] = await pool.query(`${baseSelect} WHERE p.id = ?`, [id]);
     const property = rows[0];
-
-    if (!property) {
-      return null;
-    }
+    if (!property) return null;
 
     const [images] = await pool.query(
       "SELECT id, image_url, is_cover, sort_order FROM property_images WHERE property_id = ? ORDER BY sort_order ASC, is_cover DESC, id ASC",
       [id]
     );
-
     property.images = images;
     return property;
   },
@@ -78,14 +74,13 @@ export const propertyModel = {
         payload.bathrooms,
         payload.transactionType,
         payload.status,
-        payload.featuredBadge,
-        payload.latitude,
-        payload.longitude,
+        payload.featuredBadge || null,
+        payload.latitude    || null,
+        payload.longitude   || null,
         payload.categoryId,
         toBoolean(payload.isFeatured) ? 1 : 0
       ]
     );
-
     return this.findById(result.insertId);
   },
 
@@ -109,15 +104,14 @@ export const propertyModel = {
         payload.bathrooms,
         payload.transactionType,
         payload.status,
-        payload.featuredBadge,
-        payload.latitude,
-        payload.longitude,
+        payload.featuredBadge || null,
+        payload.latitude    || null,
+        payload.longitude   || null,
         payload.categoryId,
         toBoolean(payload.isFeatured) ? 1 : 0,
         id
       ]
     );
-
     return this.findById(id);
   },
 
@@ -125,11 +119,29 @@ export const propertyModel = {
     await pool.query("DELETE FROM properties WHERE id = ?", [id]);
   },
 
-  async addImage(propertyId, imageUrl, isCover = false) {
+  /* ── Images ── */
+
+  async addImage(propertyId, imageUrl, isCover = false, sortOrder = 0) {
     await pool.query(
-      "INSERT INTO property_images (property_id, image_url, is_cover) VALUES (?, ?, ?)",
-      [propertyId, imageUrl, isCover ? 1 : 0]
+      "INSERT INTO property_images (property_id, image_url, is_cover, sort_order) VALUES (?, ?, ?, ?)",
+      [propertyId, imageUrl, isCover ? 1 : 0, sortOrder]
     );
+  },
+
+  async findImageById(imageId) {
+    const [rows] = await pool.query(
+      "SELECT id, property_id, image_url, is_cover, sort_order FROM property_images WHERE id = ?",
+      [imageId]
+    );
+    return rows[0] || null;
+  },
+
+  async findImagesByPropertyId(propertyId) {
+    const [rows] = await pool.query(
+      "SELECT id, property_id, image_url, is_cover, sort_order FROM property_images WHERE property_id = ? ORDER BY sort_order ASC, id ASC",
+      [propertyId]
+    );
+    return rows;
   },
 
   async removeImage(imageId) {

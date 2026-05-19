@@ -1,8 +1,8 @@
-import { useRef, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
-import { Bath, BedDouble, CalendarCheck, Check, Copy, Expand, LayoutGrid, Mail, MapPin, Printer, Ruler, Share2 } from "lucide-react";
+import { Bath, BedDouble, CalendarCheck, Check, Copy, Expand, LayoutGrid, Mail, MapPin, Phone, Printer, Ruler, Share2 } from "lucide-react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -42,16 +42,16 @@ const ShareButtons = ({ title, price }) => {
   return (
     <div className="flex flex-wrap gap-2">
       <button onClick={copyLink} type="button"
-        className="flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 transition hover:border-bronze hover:text-bronze dark:border-slate-700 dark:text-slate-300">
-        {copied ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+        className="flex items-center gap-2 rounded-full border border-white/15 px-4 py-2 text-xs font-semibold text-white/50 transition hover:border-bronze hover:text-bronze">
+        {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
         {copied ? t("property_detail.copied") : t("property_detail.copy_link")}
       </button>
       <a href={`https://wa.me/?text=${encodeURIComponent(text)}`} target="_blank" rel="noreferrer"
-        className="flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 transition hover:border-emerald-500 hover:text-emerald-600 dark:border-slate-700 dark:text-slate-300">
+        className="flex items-center gap-2 rounded-full border border-white/15 px-4 py-2 text-xs font-semibold text-white/50 transition hover:border-emerald-500 hover:text-emerald-400">
         <Share2 size={13} /> {t("property_detail.whatsapp")}
       </a>
       <a href={`mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(text)}`}
-        className="flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 transition hover:border-bronze hover:text-bronze dark:border-slate-700 dark:text-slate-300">
+        className="flex items-center gap-2 rounded-full border border-white/15 px-4 py-2 text-xs font-semibold text-white/50 transition hover:border-bronze hover:text-bronze">
         <Mail size={13} /> {t("property_detail.email")}
       </a>
     </div>
@@ -62,8 +62,8 @@ const ShareButtons = ({ title, price }) => {
 const PropertyDetailsPage = () => {
   const { id } = useParams();
   const { t } = useTranslation();
-  const { data: property, loading } = useFetch(`/properties/${id}`);
-  const { data: allProperties } = useFetch("/properties");
+  const { data: property, loading } = useFetch(`/properties/${id}`, null);
+  const { data: allProperties }     = useFetch("/properties", []);
 
   const similar = useMemo(() => {
     if (!property || !allProperties?.length) return [];
@@ -76,8 +76,7 @@ const PropertyDetailsPage = () => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(false);
-  const [contactForm, setContactForm] = useState({ fullName: "", email: "", phone: "", message: "", propertyId: Number(id) });
-  const formRef = useRef(null);
+  const [contactForm, setContactForm] = useState({ fullName: "", email: "", phone: "", message: "", propertyId: parseInt(id, 10) || null });
 
   const handleRequestVisit = () => {
     setBookingOpen(true);
@@ -109,9 +108,10 @@ const PropertyDetailsPage = () => {
   );
 
   if (loading) return <LoadingState />;
+  if (!property || !property.id) return <div className="section-shell py-32 text-center text-slate-500">Bien introuvable.</div>;
 
   return (
-    <div>
+    <div className="pb-20 lg:pb-0">
       {/* Booking modal */}
       {bookingOpen && property && (
         <BookingModal property={property} onClose={() => setBookingOpen(false)} />
@@ -139,56 +139,79 @@ const PropertyDetailsPage = () => {
       </Helmet>
 
       {/* Hero */}
-      <section className="border-b border-slate-200 bg-white py-12 dark:border-slate-800 dark:bg-night">
+      <section className="bg-ink py-14 dark:bg-obsidian">
         <div className="section-shell">
+          {/* Breadcrumb + Actions */}
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.28em] text-slate-500">
-              <Link to="/" className="hover:text-bronze">{t("property_detail.home")}</Link>
-              <span>/</span>
-              <Link to="/properties" className="hover:text-bronze">{t("property_detail.properties")}</Link>
-              <span>/</span>
-              <span className="text-bronze">{property.city}</span>
+            <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-white/30">
+              <Link to="/" className="transition hover:text-bronze">{t("property_detail.home")}</Link>
+              <span className="text-white/15">—</span>
+              <Link to="/properties" className="transition hover:text-bronze">{t("property_detail.properties")}</Link>
+              <span className="text-white/15">—</span>
+              <span className="text-bronze/70">{property.city}</span>
             </div>
-            {/* Actions */}
-            <div className="no-print flex items-center gap-3">
+            <div className="no-print flex flex-wrap items-center gap-2">
               <ShareButtons title={property.title} price={property.price} />
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 transition hover:border-bronze hover:text-bronze dark:border-slate-700 dark:text-slate-300"
+                className="flex items-center gap-2 rounded-full border border-white/15 px-4 py-2 text-xs font-semibold text-white/50 transition hover:border-bronze hover:text-bronze"
               >
                 <Printer size={13} /> {t("property_detail.print")}
               </button>
             </div>
           </div>
 
-          <div className="mt-8 grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
+          {/* Title + Price panel */}
+          <div className="mt-10 grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
             <div>
-              <p className="text-xs uppercase tracking-[0.32em] text-bronze">{property.category_name}</p>
-              <h1 className="mt-4 font-display text-5xl leading-tight text-ink dark:text-white sm:text-6xl">{property.title}</h1>
-              <p className="mt-6 flex items-center gap-2 text-sm uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                <MapPin size={15} /> {property.address}, {property.city}
+              {/* Bronze ornament */}
+              <div className="mb-4 flex items-center gap-3">
+                <div className="h-px w-8 bg-bronze/60" />
+                <p className="text-[10px] font-semibold uppercase tracking-[0.42em] text-bronze/80">
+                  {property.category_name}
+                </p>
+              </div>
+              <h1 className="font-display text-3xl font-light leading-[1.05] text-white sm:text-5xl lg:text-7xl">
+                {property.title}
+              </h1>
+              <p className="mt-6 flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-white/30">
+                <MapPin size={13} className="text-bronze/60" />
+                {property.address}, {property.city}
               </p>
             </div>
-            <div className="flex flex-col gap-5 rounded-[28px] bg-primary p-6 dark:bg-slate-900">
-              <div className="flex items-end justify-between gap-4">
+
+            {/* Price card */}
+            <div className="rounded-[28px] border border-white/8 bg-white/5 p-7 backdrop-blur-sm">
+              <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.25em] text-slate-500">{t("property_detail.price_label")}</p>
-                  <p className="mt-3 text-4xl font-semibold text-forest dark:text-mist">{fmt(property.price)}</p>
+                  <p className="text-[10px] uppercase tracking-[0.32em] text-white/30">
+                    {t("property_detail.price_label")}
+                  </p>
+                  <p className="mt-3 font-display text-3xl font-light text-bronze sm:text-4xl">
+                    {fmt(property.price)}
+                  </p>
                 </div>
-                <button type="button" onClick={handleRequestVisit} className="btn-primary flex items-center gap-2">
-                  <CalendarCheck size={16} /> {t("property_detail.request_visit")}
+                <button
+                  type="button"
+                  onClick={handleRequestVisit}
+                  className="flex items-center gap-2 rounded-full bg-bronze px-6 py-3 text-sm font-semibold text-white transition hover:bg-bronze/90"
+                >
+                  <CalendarCheck size={15} /> {t("property_detail.request_visit")}
                 </button>
               </div>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+
+              <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {[
                   { icon: BedDouble, label: `${property.bedrooms} ${t("property_card.bedrooms")}` },
                   { icon: Bath,      label: `${property.bathrooms} ${t("property_card.bathrooms")}` },
                   { icon: Ruler,     label: `${property.surface} ${t("property_card.surface")}` },
                   { icon: LayoutGrid,label: `${property.rooms} ${t("property_card.rooms")}` },
                 ].map(({ icon: Icon, label }) => (
-                  <div key={label} className="rounded-2xl bg-white px-4 py-4 dark:bg-night">
-                    <div className="flex items-center gap-2 text-sm"><Icon size={16} /> {label}</div>
+                  <div key={label} className="rounded-2xl border border-white/8 bg-white/5 px-3 py-3">
+                    <div className="flex items-center gap-1.5 text-xs text-white/50">
+                      <Icon size={13} className="text-bronze/70" /> {label}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -217,7 +240,7 @@ const PropertyDetailsPage = () => {
                 </span>
               </div>
             </div>
-            <div className="mt-5 grid grid-cols-4 gap-2 sm:gap-4">
+            <div className="mt-5 grid grid-cols-4 gap-1.5 sm:gap-4">
               {gallery.map((image, index) => (
                 <button key={image.id} type="button"
                   onClick={() => { setSelectedImage(index); setLightboxOpen(true); }}
@@ -227,24 +250,28 @@ const PropertyDetailsPage = () => {
               ))}
             </div>
 
-            <div className="mt-12 grid gap-12 border-t border-slate-200 pt-10 dark:border-slate-800 lg:grid-cols-[0.95fr_1.05fr]">
+            <div className="mt-14 grid gap-8 border-t border-ink/8 pt-12 dark:border-white/8 sm:gap-12 lg:grid-cols-[0.95fr_1.05fr]">
               <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-bronze">{t("property_detail.presentation_eyebrow")}</p>
-                <h2 className="mt-4 font-display text-4xl text-ink dark:text-white">{t("property_detail.presentation_title")}</h2>
+                <div className="flex items-center gap-3">
+                  <div className="h-px w-8 bg-bronze/60" />
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.42em] text-bronze">{t("property_detail.presentation_eyebrow")}</p>
+                </div>
+                <h2 className="mt-5 font-display text-4xl font-light leading-tight text-ink dark:text-white sm:text-5xl">{t("property_detail.presentation_title")}</h2>
               </div>
-              <div className="space-y-6 text-base leading-8 text-slate-600 dark:text-slate-300">
+              <div className="space-y-6 text-base leading-9 text-slate-500 dark:text-slate-400">
                 <p>{property.description}</p>
                 <p>{t("property_detail.presentation_p2")}</p>
               </div>
             </div>
           </div>
 
-          <aside className="space-y-6">
+          <aside className="space-y-6 lg:sticky lg:top-32 lg:self-start">
             {/* Map if coordinates available */}
             {property.latitude && property.longitude && (
               <div className="overflow-hidden rounded-[32px] border border-slate-200 dark:border-slate-800">
                 <p className="px-6 py-4 text-[11px] uppercase tracking-[0.28em] text-bronze">{t("property_detail.location_label")}</p>
                 <MapContainer
+                  key={property.id}
                   center={[Number(property.latitude), Number(property.longitude)]}
                   zoom={15}
                   style={{ height: "240px", width: "100%" }}
@@ -261,21 +288,53 @@ const PropertyDetailsPage = () => {
               </div>
             )}
 
-            <form ref={formRef} onSubmit={handleSubmit} className="rounded-[32px] border border-slate-200 bg-white p-8 shadow-soft dark:border-slate-800 dark:bg-slate-900">
-              <p className="text-xs uppercase tracking-[0.3em] text-bronze">{t("property_detail.contact_eyebrow")}</p>
-              <h3 className="mt-4 font-display text-4xl text-ink dark:text-white">{t("property_detail.contact_title")}</h3>
-              <div className="mt-8 space-y-4">
-                <input className="input-ui" placeholder={t("property_detail.form_name")} value={contactForm.fullName} onChange={(e) => setContactForm((p) => ({ ...p, fullName: e.target.value }))} />
-                <input className="input-ui" type="email" placeholder={t("property_detail.form_email")} value={contactForm.email} onChange={(e) => setContactForm((p) => ({ ...p, email: e.target.value }))} />
-                <input className="input-ui" placeholder={t("property_detail.form_phone")} value={contactForm.phone} onChange={(e) => setContactForm((p) => ({ ...p, phone: e.target.value }))} />
-                <textarea className="input-ui min-h-36" placeholder={t("property_detail.form_message")} value={contactForm.message} onChange={(e) => setContactForm((p) => ({ ...p, message: e.target.value }))} />
+            <form onSubmit={handleSubmit} className="rounded-[32px] border border-white/8 bg-ink p-8 dark:border-white/5 dark:bg-obsidian">
+              <div className="flex items-center gap-3">
+                <div className="h-px w-6 bg-bronze/60" />
+                <p className="text-[10px] font-semibold uppercase tracking-[0.4em] text-bronze/80">{t("property_detail.contact_eyebrow")}</p>
               </div>
-              <button type="submit" className="btn-primary mt-6 w-full">{t("property_detail.form_send")}</button>
+              <h3 className="mt-5 font-display text-4xl font-light text-white">{t("property_detail.contact_title")}</h3>
+              <div className="mt-7 space-y-3">
+                <input
+                  className="w-full rounded-2xl border border-white/10 bg-white/6 px-4 py-3.5 text-sm text-white placeholder:text-white/25 outline-none transition focus:border-bronze focus:ring-2 focus:ring-bronze/15 caret-bronze"
+                  placeholder={t("property_detail.form_name")}
+                  value={contactForm.fullName}
+                  onChange={(e) => setContactForm((p) => ({ ...p, fullName: e.target.value }))}
+                />
+                <input
+                  className="w-full rounded-2xl border border-white/10 bg-white/6 px-4 py-3.5 text-sm text-white placeholder:text-white/25 outline-none transition focus:border-bronze focus:ring-2 focus:ring-bronze/15 caret-bronze"
+                  type="email"
+                  placeholder={t("property_detail.form_email")}
+                  value={contactForm.email}
+                  onChange={(e) => setContactForm((p) => ({ ...p, email: e.target.value }))}
+                />
+                <input
+                  className="w-full rounded-2xl border border-white/10 bg-white/6 px-4 py-3.5 text-sm text-white placeholder:text-white/25 outline-none transition focus:border-bronze focus:ring-2 focus:ring-bronze/15 caret-bronze"
+                  placeholder={t("property_detail.form_phone")}
+                  value={contactForm.phone}
+                  onChange={(e) => setContactForm((p) => ({ ...p, phone: e.target.value }))}
+                />
+                <textarea
+                  className="w-full rounded-2xl border border-white/10 bg-white/6 px-4 py-3.5 text-sm text-white placeholder:text-white/25 outline-none transition focus:border-bronze focus:ring-2 focus:ring-bronze/15 caret-bronze min-h-36"
+                  placeholder={t("property_detail.form_message")}
+                  value={contactForm.message}
+                  onChange={(e) => setContactForm((p) => ({ ...p, message: e.target.value }))}
+                />
+              </div>
+              <button
+                type="submit"
+                className="mt-6 w-full rounded-full bg-bronze py-3.5 text-sm font-semibold text-white transition hover:bg-bronze/90"
+              >
+                {t("property_detail.form_send")}
+              </button>
             </form>
 
-            <div className="rounded-[32px] bg-primary p-8 dark:bg-slate-900">
-              <p className="text-xs uppercase tracking-[0.3em] text-bronze">{t("property_detail.agency_eyebrow")}</p>
-              <p className="mt-5 text-base leading-8 text-slate-600 dark:text-slate-300">
+            <div className="rounded-[32px] border border-white/8 bg-ink p-8 dark:border-white/5 dark:bg-obsidian">
+              <div className="flex items-center gap-3">
+                <div className="h-px w-6 bg-bronze/60" />
+                <p className="text-[10px] font-semibold uppercase tracking-[0.4em] text-bronze/80">{t("property_detail.agency_eyebrow")}</p>
+              </div>
+              <p className="mt-5 text-sm leading-8 text-white/40">
                 {t("property_detail.agency_text")}
               </p>
             </div>
@@ -283,13 +342,37 @@ const PropertyDetailsPage = () => {
         </div>
       </section>
 
+      {/* ── Mobile sticky bottom bar ── */}
+      <div className="no-print fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur-md dark:border-slate-800 dark:bg-night/95 lg:hidden">
+        <div className="section-shell flex gap-3 py-3">
+          <button
+            type="button"
+            onClick={handleRequestVisit}
+            className="btn-primary flex flex-1 items-center justify-center gap-2"
+          >
+            <CalendarCheck size={15} /> {t("property_detail.request_visit")}
+          </button>
+          <a
+            href="tel:+21600000000"
+            className="btn-secondary flex items-center gap-2"
+          >
+            <Phone size={15} />
+            <span className="hidden sm:inline">Appeler</span>
+          </a>
+        </div>
+      </div>
+
       {/* Similar properties */}
       {similar.length > 0 && (
-        <section className="border-t border-slate-200 bg-white py-16 dark:border-slate-800 dark:bg-night">
-          <div className="section-shell">
-            <p className="text-[11px] uppercase tracking-[0.32em] text-bronze">{t("property_detail.similar_eyebrow")}</p>
-            <h2 className="mt-3 font-display text-3xl text-ink dark:text-white">{t("property_detail.similar_title")}</h2>
-            <div className="mt-10 grid gap-8 lg:grid-cols-3">
+        <section className="bg-ink py-20 dark:bg-obsidian">
+          <div className="h-px w-full bg-gradient-to-r from-transparent via-bronze/25 to-transparent mb-0" />
+          <div className="section-shell pt-20">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="h-px w-8 bg-bronze/60" />
+              <p className="text-[10px] font-semibold uppercase tracking-[0.42em] text-bronze/80">{t("property_detail.similar_eyebrow")}</p>
+            </div>
+            <h2 className="mt-4 font-display text-4xl font-light text-white sm:text-5xl">{t("property_detail.similar_title")}</h2>
+            <div className="mt-12 grid gap-4 lg:grid-cols-3">
               {similar.map((p) => <PropertyCard key={p.id} property={p} />)}
             </div>
           </div>

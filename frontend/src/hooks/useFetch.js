@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react";
 import api from "../api/client";
 
-export const useFetch = (url) => {
-  const [data, setData] = useState([]);
+/**
+ * Generic data-fetching hook.
+ * @param {string} url  - API endpoint
+ * @param {*} initialData - default value before first response ([] for lists, null for single objects)
+ */
+export const useFetch = (url, initialData = null) => {
+  const [data, setData]       = useState(initialData);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError]     = useState("");
 
   useEffect(() => {
     let active = true;
@@ -13,25 +18,16 @@ export const useFetch = (url) => {
       try {
         setLoading(true);
         const response = await api.get(url);
-        if (active) {
-          setData(response.data);
-        }
+        if (active) setData(response.data);
       } catch (err) {
-        if (active) {
-          setError(err.response?.data?.message || "Unable to load data");
-        }
+        if (active) setError(err.response?.data?.message || "Unable to load data");
       } finally {
-        if (active) {
-          setLoading(false);
-        }
+        if (active) setLoading(false);
       }
     };
 
     fetchData();
-
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [url]);
 
   return { data, loading, error, setData };

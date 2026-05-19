@@ -1,6 +1,7 @@
 import multer from "multer";
 import path from "node:path";
 import fs from "node:fs";
+import { AppError } from "../utils/AppError.js";
 
 const uploadDirectory = path.resolve("src/uploads");
 
@@ -20,7 +21,8 @@ const fileFilter = (req, file, cb) => {
   if (file.mimetype.startsWith("image/")) {
     cb(null, true);
   } else {
-    cb(new Error("Only image uploads are allowed"));
+    // Use AppError so the error handler returns 400 (not 500)
+    cb(new AppError("Only image uploads are allowed", 400));
   }
 };
 
@@ -28,6 +30,6 @@ export const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024
+    fileSize: 5 * 1024 * 1024   // 5 MB
   }
 });

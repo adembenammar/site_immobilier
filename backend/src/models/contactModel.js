@@ -7,8 +7,9 @@ export const contactModel = {
        VALUES (?, ?, ?, ?, ?)`,
       [payload.propertyId || null, payload.fullName, payload.email, payload.phone || null, payload.message]
     );
-
-    return { id: result.insertId, ...payload };
+    // Return the actual DB row (not the raw client payload)
+    const [rows] = await pool.query("SELECT * FROM contact_messages WHERE id = ?", [result.insertId]);
+    return rows[0];
   },
 
   async list() {
@@ -24,6 +25,6 @@ export const contactModel = {
   async updateStatus(id, status) {
     await pool.query("UPDATE contact_messages SET status = ? WHERE id = ?", [status, id]);
     const [rows] = await pool.query("SELECT * FROM contact_messages WHERE id = ?", [id]);
-    return rows[0];
+    return rows[0] || null;
   }
 };

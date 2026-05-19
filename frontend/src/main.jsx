@@ -9,6 +9,9 @@ import { ToastProvider } from "./context/ToastContext";
 import "./i18n";
 import "./styles/index.css";
 
+// Disable browser scroll restoration — our ScrollToTop component has full control.
+if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <HelmetProvider>

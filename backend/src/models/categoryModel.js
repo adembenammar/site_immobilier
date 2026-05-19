@@ -17,6 +17,11 @@ export const categoryModel = {
     return rows[0] || null;
   },
 
+  async findById(id) {
+    const [rows] = await pool.query("SELECT * FROM categories WHERE id = ?", [id]);
+    return rows[0] || null;
+  },
+
   async remove(id) {
     await pool.query("DELETE FROM categories WHERE id = ?", [id]);
   }

@@ -1,5 +1,6 @@
 import { body, param } from "express-validator";
 import { userModel } from "../models/userModel.js";
+import { AppError } from "../utils/AppError.js";
 
 export const listUsers = async (req, res) => {
   const users = await userModel.list();
@@ -13,5 +14,6 @@ export const userRoleValidation = [
 
 export const updateUserRole = async (req, res) => {
   const user = await userModel.updateRole(req.params.id, req.body.role);
+  if (!user) throw new AppError("User not found", 404);
   return res.json(user);
 };

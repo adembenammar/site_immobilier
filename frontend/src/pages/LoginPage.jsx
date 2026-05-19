@@ -6,7 +6,7 @@ import BrandLogo from "../components/common/BrandLogo";
 const LoginPage = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: "admin@tentation-immobiliere.com", password: "password123" });
+  const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
 
   const handleSubmit = async (event) => {
@@ -24,7 +24,7 @@ const LoginPage = () => {
       <div className="mx-auto max-w-lg rounded-[32px] border border-slate-200 bg-white p-8 shadow-soft dark:border-slate-800 dark:bg-slate-900">
         <BrandLogo withText={false} />
         <p className="mt-6 text-sm uppercase tracking-[0.25em] text-bronze">Admin login</p>
-        <h1 className="mt-3 font-display text-4xl">Accedez au dashboard de Tentation Immobiliere.</h1>
+        <h1 className="mt-3 font-display text-4xl">Accédez au dashboard de Tentation Immobilière.</h1>
         <form onSubmit={handleSubmit} className="mt-8 space-y-4">
           <input
             className="input-ui"
